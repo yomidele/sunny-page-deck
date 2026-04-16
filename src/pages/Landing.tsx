@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, Play, Zap, Award, TrendingUp, ArrowRight, Twitter, Facebook, Instagram, Youtube } from 'lucide-react';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import { getVideos, getPosts, Video, Post, getYoutubeThumbnail } from '@/lib/contentManagement';
+import heroImage from '@/assets/hero-student.jpeg';
 
 const Landing = () => {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -200,7 +201,7 @@ const Landing = () => {
             <div className="relative h-[450px] md:h-[550px] order-1 md:order-2 rounded-2xl overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-tr from-[#FFD700]/20 via-transparent to-transparent z-10"></div>
               <img
-                src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&h=700&fit=crop&q=80"
+                src={heroImage}
                 alt="Student learning with book and backpack"
                 className="w-full h-full object-cover"
               />

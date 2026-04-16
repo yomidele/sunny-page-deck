@@ -38,6 +38,27 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          created_at: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       cbt_answers: {
         Row: {
           created_at: string
@@ -507,6 +528,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_email_whitelist: { Args: { check_email: string }; Returns: Json }
       complete_account_setup: {
         Args: { p_full_name: string; p_phone?: string; p_user_id: string }
         Returns: undefined
@@ -529,6 +551,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      verify_general_password: {
+        Args: { input_password: string }
+        Returns: boolean
       }
     }
     Enums: {

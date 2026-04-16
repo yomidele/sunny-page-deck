@@ -199,11 +199,10 @@ const CbtExam = () => {
         ),
       );
 
-      await supabase
+      await (supabase as any)
         .from("cbt_answers")
         .update({
           selected_option: option,
-          updated_at: new Date().toISOString(),
         })
         .eq("id", answerSlotId);
 

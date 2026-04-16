@@ -30,8 +30,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 interface AllowedUser {
   id: string;
   email: string;
-  is_used: boolean;
-  linked_user_id: string | null;
+  full_name: string | null;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -47,9 +47,9 @@ const AllowedStudents = () => {
 
   const fetchUsers = async () => {
     const { data } = await supabase
-      .from("allowed_users")
+      .from("allowed_students")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }) as any;
     setUsers(data ?? []);
     setLoading(false);
   };
@@ -61,8 +61,8 @@ const AllowedStudents = () => {
   const addSingle = async () => {
     if (!email.trim()) return;
     const { error } = await supabase
-      .from("allowed_users")
-      .insert({ email: email.trim().toLowerCase() });
+      .from("allowed_students")
+      .insert({ email: email.trim().toLowerCase() } as any);
     if (error) {
       toast({
         title: "Error",
@@ -90,7 +90,7 @@ const AllowedStudents = () => {
     if (!emails.length) return;
 
     const rows = emails.map((email) => ({ email }));
-    const { error } = await supabase.from("allowed_users").insert(rows);
+    const { error } = await supabase.from("allowed_students").insert(rows as any);
     if (error) {
       toast({
         title: "Error",
@@ -106,7 +106,7 @@ const AllowedStudents = () => {
   };
 
   const removeUser = async (id: string) => {
-    await supabase.from("allowed_users").delete().eq("id", id);
+    await supabase.from("allowed_students").delete().eq("id", id) as any;
     fetchUsers();
   };
 
@@ -189,11 +189,11 @@ const AllowedStudents = () => {
               <CardContent className="flex items-center justify-between p-4">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{u.email}</p>
-                  <Badge
-                    variant={u.is_used ? "default" : "secondary"}
+                    <Badge
+                    variant={u.is_active ? "default" : "secondary"}
                     className="mt-1 text-xs"
                   >
-                    {u.is_used ? "Active" : "Pending"}
+                    {u.is_active ? "Active" : "Inactive"}
                   </Badge>
                 </div>
                 <Button
@@ -228,8 +228,8 @@ const AllowedStudents = () => {
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.email}</TableCell>
                   <TableCell>
-                    <Badge variant={u.is_used ? "default" : "secondary"}>
-                      {u.is_used ? "Active" : "Pending"}
+                    <Badge variant={u.is_active ? "default" : "secondary"}>
+                      {u.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">

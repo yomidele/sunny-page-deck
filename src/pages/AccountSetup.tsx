@@ -86,10 +86,9 @@ const AccountSetup = () => {
         return;
       }
 
-      // Mark allowed_users as used
-      const { error: setupError } = await supabase.rpc(
+      const { error: setupError } = await (supabase as any).rpc(
         "complete_account_setup",
-        { user_email: email, user_id: userId },
+        { p_user_id: userId, p_full_name: fullName.trim() },
       );
 
       if (setupError) {

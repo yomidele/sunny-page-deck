@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react';
 import { getUserStats, UserStats } from '@/lib/contentManagement';
-import { useAdmin } from '@/hooks/useAdmin';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart3, Award, Target, TrendingUp, Clock, BookOpen } from 'lucide-react';
@@ -9,7 +9,7 @@ import Leaderboard from '@/components/Leaderboard';
 import PerformanceInsights from '@/components/PerformanceInsights';
 
 const StudentAnalytics = () => {
-  const { user } = useAdmin();
+  const { user } = useAuth();
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -114,7 +114,7 @@ const StudentAnalytics = () => {
                       </p>
                       <div className="flex items-center gap-2">
                         <span className="w-3 h-3 rounded-full bg-orange-500"></span>
-                        <span className="text-[#888888] text-sm">Best: {stats.best_score}%</span>
+                        <span className="text-[#888888] text-sm">Best: {stats.highest_score}%</span>
                       </div>
                     </div>
                   </div>

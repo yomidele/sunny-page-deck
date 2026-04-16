@@ -293,10 +293,9 @@ export interface UserStats {
   user_id: string;
   total_tests_taken: number;
   average_score: number;
-  best_score: number;
-  worst_score: number;
-  weakest_subject?: string;
-  strongest_subject?: string;
+  highest_score: number;
+  weakest_subject?: string | null;
+  strongest_subject?: string | null;
   total_time_spent_seconds: number;
   created_at: string;
   updated_at: string;

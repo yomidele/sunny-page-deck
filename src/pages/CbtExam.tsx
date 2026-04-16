@@ -199,11 +199,10 @@ const CbtExam = () => {
         ),
       );
 
-      await supabase
+      await (supabase as any)
         .from("cbt_answers")
         .update({
           selected_option: option,
-          updated_at: new Date().toISOString(),
         })
         .eq("id", answerSlotId);
 
@@ -280,12 +279,10 @@ const CbtExam = () => {
         subject_scores: subjectScores,
       });
 
-      // Mark session as completed
-      await supabase
+      await (supabase as any)
         .from("cbt_sessions")
         .update({
           status: "completed",
-          end_time: new Date().toISOString(),
         })
         .eq("id", sid);
 

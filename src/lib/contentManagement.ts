@@ -483,7 +483,7 @@ export const getPerformanceInsights = async (
       .limit(10);
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as unknown as PerformanceInsight[];
   } catch (error) {
     console.error("Error fetching insights:", error);
     return [];

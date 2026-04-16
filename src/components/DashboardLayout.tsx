@@ -1,119 +1,155 @@
-import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import {
-  LayoutDashboard, Globe, Package, ShoppingCart, CreditCard,
-  MessageSquare, FileText, Code, LogOut, Settings, Menu, X, Users
-} from "lucide-react";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Link, useLocation } from "react-router-dom";
+import {
+  BookOpen,
+  Menu,
+  X,
+  LayoutDashboard,
+  BookMarked,
+  BarChart3,
+  TrendingUp,
+  Trophy,
+  User,
+  LogOut,
+  Settings,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 
-const navItems = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Overview" },
-  { to: "/sites", icon: Globe, label: "Sales Reps" },
-  { to: "/products", icon: Package, label: "Products" },
-  { to: "/orders", icon: ShoppingCart, label: "Orders" },
-  { to: "/conversations", icon: MessageSquare, label: "Conversations" },
-  { to: "/payments", icon: CreditCard, label: "Payments" },
-  { to: "/docs", icon: FileText, label: "How to Use" },
-];
+interface DashboardLayoutProps {
+  children: React.ReactNode;
+}
 
-const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
+const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { signOut } = useAuth();
   const location = useLocation();
-  const isMobile = useIsMobile();
-  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const sidebar = (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex h-14 items-center gap-3 px-4 border-b border-border shrink-0">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
-          <Users className="h-4 w-4 text-primary-foreground" />
-        </div>
-        <span className="font-bold text-sm">AI Sales Rep</span>
-        {isMobile && (
-          <button onClick={() => setMobileOpen(false)} className="ml-auto p-1">
-            <X className="h-5 w-5" />
-          </button>
-        )}
-      </div>
+  const navItems = [
+    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/practice", label: "Practice", icon: BookMarked },
+    { path: "/cbt/setup", label: "CBT Exam", icon: BarChart3 },
+    { path: "/analytics", label: "Analytics", icon: TrendingUp },
+    { path: "/cbt/result/latest", label: "Results", icon: Trophy },
+    { path: "/profile", label: "Profile", icon: User },
+  ];
 
-      {/* Nav */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
-          const active = location.pathname === item.to ||
-            (item.to !== "/dashboard" && location.pathname.startsWith(item.to));
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={() => isMobile && setMobileOpen(false)}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                active
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Bottom */}
-      <div className="border-t border-border px-2 py-3 space-y-0.5 shrink-0">
-        <button
-          onClick={() => { signOut(); isMobile && setMobileOpen(false); }}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        >
-          <LogOut className="h-4 w-4 shrink-0" />
-          <span>Sign out</span>
-        </button>
-      </div>
-    </div>
-  );
+  const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      {/* Desktop sidebar */}
-      {!isMobile && (
-        <aside className="w-60 border-r border-border bg-card flex flex-col shrink-0">
-          {sidebar}
-        </aside>
+    <div className="flex min-h-screen bg-[#0B0B0B]">
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 lg:hidden z-30"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
 
-      {/* Mobile overlay */}
-      {isMobile && mobileOpen && (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border">
-            {sidebar}
-          </aside>
-        </>
-      )}
+      {/* Sidebar */}
+      <aside
+        className={`fixed left-0 top-0 h-screen w-64 bg-[#0B0B0B] border-r border-[#1A1A1A] z-40 transform transition-transform duration-300 lg:static lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="border-b border-[#1A1A1A] px-6 py-6">
+            <Link to="/" className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#FFD700] rounded-lg flex items-center justify-center">
+                <BookOpen className="h-6 w-6 text-[#0B0B0B]" />
+              </div>
+              <span className="font-heading text-xl font-bold text-[#FFD700]">
+                MEEKAH
+              </span>
+            </Link>
+          </div>
 
-      {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile header */}
-        {isMobile && (
-          <header className="flex items-center h-14 px-4 border-b border-border bg-card shrink-0">
-            <button onClick={() => setMobileOpen(true)} className="p-1 mr-3">
-              <Menu className="h-5 w-5" />
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg smooth-transition relative ${
+                    active
+                      ? "text-[#FFD700] bg-[#111111]"
+                      : "text-[#B0B0B0] hover:text-white hover:bg-[#111111]"
+                  }`}
+                >
+                  {active && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FFD700] rounded-r-full"></div>
+                  )}
+                  <Icon className="h-5 w-5" />
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Footer */}
+          <div className="border-t border-[#1A1A1A] p-4 space-y-2">
+            <Link
+              to="#"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-[#B0B0B0] hover:text-white hover:bg-[#111111] smooth-transition"
+            >
+              <Settings className="h-5 w-5" />
+              <span className="font-medium">Settings</span>
+            </Link>
+            <Button
+              onClick={() => signOut()}
+              variant="ghost"
+              className="w-full justify-start gap-3 px-4 py-3 h-auto text-[#B0B0B0] hover:text-red-400 hover:bg-red-950/20"
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="font-medium">Sign Out</span>
+            </Button>
+          </div>
+
+          {/* Close button for mobile */}
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden absolute top-6 right-6 p-2 hover:bg-[#111111] rounded-lg"
+          >
+            <X className="h-6 w-6 text-[#B0B0B0]" />
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <header className="border-b border-[#1A1A1A] bg-[#0B0B0B] sticky top-0 z-20">
+          <div className="flex items-center justify-between px-6 py-4">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 hover:bg-[#111111] rounded-lg text-[#B0B0B0]"
+            >
+              <Menu className="h-6 w-6" />
             </button>
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              <span className="font-bold text-sm">AI Sales Rep</span>
-            </div>
-          </header>
-        )}
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+            <div className="flex-1"></div>
+            <Button
+              onClick={() => signOut()}
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-[#B0B0B0] hover:text-white lg:hidden"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </header>
+
+        {/* Content */}
+        <main className="flex-1 overflow-auto">{children}</main>
       </div>
+
+      {/* Floating WhatsApp Button */}
+      <FloatingWhatsApp />
     </div>
   );
 };

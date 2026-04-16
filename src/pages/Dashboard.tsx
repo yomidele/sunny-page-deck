@@ -1,263 +1,203 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Globe, Loader2, MessageSquare, Trash2, RefreshCw, Code, ExternalLink } from "lucide-react";
-import { Link } from "react-router-dom";
-
-const statusColors: Record<string, string> = {
-  pending: "bg-muted text-muted-foreground",
-  crawling: "bg-warning/10 text-warning border-warning/20",
-  ready: "bg-success/10 text-success border-success/20",
-  error: "bg-destructive/10 text-destructive border-destructive/20",
-};
-
-const AI_MODELS: Record<string, { label: string; models: { value: string; label: string }[] }> = {
-  openai: {
-    label: "OpenAI",
-    models: [
-      { value: "gpt-4o-mini", label: "GPT-4o Mini" },
-      { value: "gpt-4o", label: "GPT-4o" },
-      { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-      { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
-    ],
-  },
-  groq: {
-    label: "Groq",
-    models: [
-      { value: "llama-3.3-70b-versatile", label: "Llama 3.3 70B" },
-      { value: "llama-3.1-8b-instant", label: "Llama 3.1 8B" },
-      { value: "mixtral-8x7b-32768", label: "Mixtral 8x7B" },
-      { value: "gemma2-9b-it", label: "Gemma 2 9B" },
-    ],
-  },
-};
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Play, BarChart3, GraduationCap, Trophy, TrendingUp, Clock, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import DashboardLayout from '@/components/DashboardLayout';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [newSiteName, setNewSiteName] = useState("");
-  const [newSiteUrl, setNewSiteUrl] = useState("");
-  const [newProvider, setNewProvider] = useState("openai");
-  const [newModel, setNewModel] = useState("gpt-4o-mini");
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  const { data: sites, isLoading } = useQuery({
-    queryKey: ["sites"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("sites").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+  const [fullName, setFullName] = useState('');
+  const [stats, setStats] = useState({ 
+    sessions: 0, 
+    avgScore: 0,
+    bestScore: 0,
+    weakestSubject: 'Loading...',
+    totalQuestionsPracticed: 0 
   });
+  const [loading, setLoading] = useState(true);
 
-  const addSiteMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("sites").insert({
-        name: newSiteName,
-        url: newSiteUrl,
-        user_id: user!.id,
-        ai_provider: newProvider,
-        ai_model: newModel,
-      } as any);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sites"] });
-      setNewSiteName("");
-      setNewSiteUrl("");
-      setNewProvider("openai");
-      setNewModel("gpt-4o-mini");
-      setDialogOpen(false);
-      toast({ title: "Site added", description: "Now crawl the site to build its knowledge base." });
-    },
-    onError: (err) => toast({ title: "Error", description: err.message, variant: "destructive" }),
-  });
+  useEffect(() => {
+    if (!user) return;
 
-  const crawlMutation = useMutation({
-    mutationFn: async (siteId: string) => {
-      const { data, error } = await supabase.functions.invoke("crawl-site", { body: { siteId } });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["sites"] });
-      toast({ title: "Crawl complete", description: `Processed ${data.pagesCrawled} pages.` });
-    },
-    onError: (err) => toast({ title: "Crawl failed", description: err.message, variant: "destructive" }),
-  });
+    const fetchData = async () => {
+      try {
+        // Get user name
+        const { data: userData } = await supabase
+          .from('users')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        
+        if (userData) setFullName(userData.full_name);
 
-  const deleteMutation = useMutation({
-    mutationFn: async (siteId: string) => {
-      const { error } = await supabase.from("sites").delete().eq("id", siteId);
-      if (error) throw error;
+        // Get practice sessions
+        const { data: sessionsData } = await supabase
+          .from('practice_sessions')
+          .select('total_questions, correct_answers')
+          .eq('user_id', user.id);
+
+        if (sessionsData && sessionsData.length > 0) {
+          const totalQ = sessionsData.reduce((s, r) => s + r.total_questions, 0);
+          const totalC = sessionsData.reduce((s, r) => s + r.correct_answers, 0);
+          const scores = sessionsData.map(s => (s.correct_answers / s.total_questions) * 100);
+          const avgScore = Math.round((totalC / totalQ) * 100);
+          const bestScore = Math.round(Math.max(...scores));
+
+          setStats({
+            sessions: sessionsData.length,
+            avgScore,
+            bestScore,
+            weakestSubject: 'English',
+            totalQuestionsPracticed: totalQ,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user]);
+
+  const statsCards = [
+    {
+      title: 'Total Tests Taken',
+      value: stats.sessions,
+      subtitle: 'practice sessions',
+      icon: BarChart3,
+      color: 'text-blue-400',
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sites"] });
-      toast({ title: "Site deleted" });
+    {
+      title: 'Average Score',
+      value: `${stats.avgScore}%`,
+      subtitle: 'across all tests',
+      icon: TrendingUp,
+      color: 'text-green-400',
     },
-  });
+    {
+      title: 'Best Score',
+      value: `${stats.bestScore}%`,
+      subtitle: 'highest achievement',
+      icon: Trophy,
+      color: 'text-yellow-400',
+    },
+    {
+      title: 'Questions Practiced',
+      value: stats.totalQuestionsPracticed,
+      subtitle: 'total questions solved',
+      icon: Clock,
+      color: 'text-purple-400',
+    },
+  ];
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      {/* Header with Greeting */}
-      <div className="mb-12">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-4xl font-bold">Hello {user?.user_metadata?.full_name || user?.email?.split("@")[0]}</h1>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="inline-block h-2 w-2 bg-yellow-400 rounded-full"></span>
-              <p className="text-sm text-gray-600">Status: Online</p>
-            </div>
+    <DashboardLayout>
+      <div className="bg-[#0B0B0B] min-h-full">
+        {/* Welcome Section */}
+        <div className="border-b border-[#1A1A1A] bg-gradient-to-b from-[#111111] to-[#0B0B0B] px-6 py-8">
+          <div className="container mx-auto max-w-7xl">
+            <h1 className="text-4xl md:text-5xl font-heading font-bold text-white mb-2">
+              Welcome back{fullName ? `, ${fullName}` : ''}! 👋
+            </h1>
+            <p className="text-lg text-[#B0B0B0]">
+              You're making excellent progress toward mastering JAMB
+            </p>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="flex gap-3">
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                <Plus className="h-4 w-4 mr-2" /> New site
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Connect a website</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={(e) => { e.preventDefault(); addSiteMutation.mutate(); }} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Site name</Label>
-                  <Input value={newSiteName} onChange={(e) => setNewSiteName(e.target.value)} required placeholder="My Business" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Website URL</Label>
-                  <Input value={newSiteUrl} onChange={(e) => setNewSiteUrl(e.target.value)} required placeholder="https://example.com" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>AI Provider</Label>
-                    <Select value={newProvider} onValueChange={(v) => { setNewProvider(v); setNewModel(AI_MODELS[v].models[0].value); }}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="openai">OpenAI</SelectItem>
-                        <SelectItem value="groq">Groq</SelectItem>
-                      </SelectContent>
-                    </Select>
+        {/* Main Content */}
+        <div className="container mx-auto max-w-7xl px-6 py-8">
+          {/* Quick Start CTA */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <Link to="/practice">
+              <button className="w-full h-32 bg-gradient-to-br from-[#FFD700]/20 to-[#FFD700]/5 border border-[#FFD700]/30 hover:border-[#FFD700] rounded-2xl p-6 smooth-transition group overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-10 smooth-transition transform -skew-x-12 group-hover:translate-x-full duration-1000"></div>
+                <div className="relative flex items-center justify-between h-full">
+                  <div className="text-left">
+                    <h3 className="text-2xl font-bold text-white mb-1 font-heading">Start Practice</h3>
+                    <p className="text-[#B0B0B0]">Practice questions by subject</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Model</Label>
-                    <Select value={newModel} onValueChange={setNewModel}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {AI_MODELS[newProvider].models.map((m) => (
-                          <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="w-14 h-14 bg-[#FFD700] rounded-full flex items-center justify-center group-hover:scale-110 smooth-transition">
+                    <Play className="h-7 w-7 text-[#0B0B0B]" />
                   </div>
                 </div>
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={addSiteMutation.isPending}>
-                  {addSiteMutation.isPending ? "Adding..." : "Add site"}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+              </button>
+            </Link>
+
+            <Link to="/cbt/setup">
+              <button className="w-full h-32 bg-gradient-to-br from-[#111111] to-[#0B0B0B] border border-[#1A1A1A] hover:border-[#FFD700] rounded-2xl p-6 smooth-transition group overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-5 smooth-transition transform -skew-x-12 group-hover:translate-x-full duration-1000"></div>
+                <div className="relative flex items-center justify-between h-full">
+                  <div className="text-left">
+                    <h3 className="text-2xl font-bold text-white mb-1 font-heading">Full CBT Exam</h3>
+                    <p className="text-[#B0B0B0]">160 questions • 2 hours</p>
+                  </div>
+                  <div className="w-14 h-14 bg-[#1A1A1A] rounded-full flex items-center justify-center group-hover:bg-[#FFD700] group-hover:scale-110 smooth-transition">
+                    <GraduationCap className="h-7 w-7 text-[#B0B0B0] group-hover:text-[#0B0B0B] smooth-transition" />
+                  </div>
+                </div>
+              </button>
+            </Link>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-heading font-bold text-white mb-6">Your Progress</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {statsCards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <div
+                    key={card.title}
+                    className="bg-[#111111] border border-[#1A1A1A] rounded-2xl p-6 hover:border-[#FFD700] smooth-transition group"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`w-12 h-12 bg-[#1A1A1A] group-hover:bg-[#FFD700]/10 rounded-lg flex items-center justify-center smooth-transition ${card.color}`}>
+                        <Icon className="h-6 w-6" />
+                      </div>
+                    </div>
+                    <h3 className="text-sm font-medium text-[#B0B0B0] mb-2">{card.title}</h3>
+                    <p className="text-3xl font-bold text-white mb-1 font-heading">
+                      {loading ? '...' : card.value}
+                    </p>
+                    <p className="text-xs text-[#B0B0B0]">{card.subtitle}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Recent Activity / Coming Soon */}
+          <div className="bg-[#111111] border border-[#1A1A1A] rounded-2xl p-8">
+            <h2 className="text-2xl font-heading font-bold text-white mb-6">Recent Activity</h2>
+            {stats.sessions === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mx-auto mb-4">
+                  <BarChart3 className="h-8 w-8 text-[#B0B0B0]" />
+                </div>
+                <p className="text-[#B0B0B0] mb-6">No practice sessions yet</p>
+                <Link to="/practice">
+                  <Button className="bg-[#FFD700] hover:bg-yellow-500 text-[#0B0B0B] font-bold">
+                    Start Your First Practice
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-[#B0B0B0]">You've completed {stats.sessions} practice session{stats.sessions !== 1 ? 's' : ''}.</p>
+                <p className="text-[#B0B0B0]">Keep up the great work! 🎯</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {isLoading ? (
-        <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
-      ) : !sites?.length ? (
-        <div className="border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center py-20 bg-gray-50">
-          <Globe className="h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="font-semibold text-lg mb-2">No sites connected</h3>
-          <p className="text-gray-600 text-sm mb-6">Add your first website to create an AI agent</p>
-          <Button size="sm" onClick={() => setDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="h-4 w-4 mr-2" /> New site
-          </Button>
-        </div>
-      ) : (
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 bg-white">
-                <th className="text-left font-semibold text-gray-700 px-6 py-4">Name</th>
-                <th className="text-left font-semibold text-gray-700 px-6 py-4 hidden md:table-cell">Provider</th>
-                <th className="text-left font-semibold text-gray-700 px-6 py-4 hidden sm:table-cell">Status</th>
-                <th className="text-left font-semibold text-gray-700 px-6 py-4 hidden lg:table-cell">Pages</th>
-                <th className="text-right font-semibold text-gray-700 px-6 py-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sites.map((site) => (
-                <tr key={site.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div>
-                      <p className="font-medium text-gray-900">{site.name}</p>
-                      <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                        <ExternalLink className="h-3 w-3" />
-                        {site.url}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 hidden md:table-cell">
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant="outline" className="text-xs font-mono bg-gray-100 border-gray-300">
-                        {(site as any).ai_provider || "openai"}/{(site as any).ai_model || "gpt-4o-mini"}
-                      </Badge>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 hidden sm:table-cell">
-                    <Badge className={statusColors[site.status] || ""} variant="outline">
-                      {site.status}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4 hidden lg:table-cell text-gray-600">
-                    {site.pages_crawled > 0 ? site.pages_crawled : "—"}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2 justify-end">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-gray-500 hover:text-gray-700"
-                        onClick={() => crawlMutation.mutate(site.id)}
-                        disabled={crawlMutation.isPending || site.status === "crawling"}
-                        title={site.status === "pending" ? "Crawl" : "Re-crawl"}
-                      >
-                        {site.status === "crawling" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      </Button>
-                      {site.status === "ready" && (
-                        <>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-500 hover:text-gray-700" asChild title="Test Chat">
-                            <Link to={`/chat/${site.id}`}><MessageSquare className="h-4 w-4" /></Link>
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-500 hover:text-gray-700" asChild title="Embed Code">
-                            <Link to={`/embed/${site.id}`}><Code className="h-4 w-4" /></Link>
-                          </Button>
-                        </>
-                      )}
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-500 hover:text-red-600" onClick={() => deleteMutation.mutate(site.id)} title="Delete">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+    </DashboardLayout>
   );
 };
 

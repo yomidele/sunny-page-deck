@@ -1,99 +1,262 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { Users } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { BookOpen, AlertCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+
+type Mode = "login" | "first-time";
 
 const Login = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const { signIn } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const [generalPassword, setGeneralPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Redirect if already logged in
+  if (user) {
+    navigate("/dashboard", { replace: true });
+    return null;
+  }
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    const { error } = await signIn(email, password);
-    setIsLoading(false);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      navigate("/dashboard");
+    setError("");
+    setLoading(true);
+
+    try {
+      // Check whitelist first
+      const { data: rawData, error: whitelistError } = await supabase.rpc(
+        "check_email_whitelist",
+        { check_email: email.trim() },
+      );
+
+      if (whitelistError) throw whitelistError;
+
+      const whitelistData = rawData as unknown as {
+        exists: boolean;
+        is_used: boolean;
+        linked_user_id: string | null;
+      };
+
+      if (!whitelistData?.exists) {
+        setError("You are not registered for this lesson program.");
+        setLoading(false);
+        return;
+      }
+
+      if (!whitelistData.is_used) {
+        setError(
+          'You have not set up your account yet. Please use "First Time Access" below.',
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Normal login
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (signInError) {
+        setError("Invalid email or password.");
+        setLoading(false);
+        return;
+      }
+
+      navigate("/dashboard", { replace: true });
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFirstTimeAccess = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      // Check whitelist
+      const { data: rawData2, error: whitelistError } = await supabase.rpc(
+        "check_email_whitelist",
+        { check_email: email.trim() },
+      );
+
+      if (whitelistError) throw whitelistError;
+
+      const whitelistData = rawData2 as unknown as {
+        exists: boolean;
+        is_used: boolean;
+        linked_user_id: string | null;
+      };
+
+      if (!whitelistData?.exists) {
+        setError("You are not registered for this lesson program.");
+        setLoading(false);
+        return;
+      }
+
+      if (whitelistData.is_used) {
+        setError(
+          "This email already has an account. Please use the login form instead.",
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Verify general password
+      const { data: passwordValid, error: pwError } = await supabase.rpc(
+        "verify_general_password",
+        { input_password: generalPassword },
+      );
+
+      if (pwError) throw pwError;
+
+      if (!passwordValid) {
+        setError("Invalid access password. Please contact your instructor.");
+        setLoading(false);
+        return;
+      }
+
+      // Proceed to account setup
+      navigate("/setup", { state: { email: email.trim() } });
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Left branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-primary items-center justify-center p-12">
-        <div className="max-w-md text-center">
-          <div className="flex items-center gap-2.5 mb-12 justify-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-foreground/20 backdrop-blur">
-              <Users className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-primary-foreground">AI Sales Rep</span>
-          </div>
-          <h2 className="text-3xl font-bold text-primary-foreground mb-6 leading-tight">
-            Your 24/7 digital sales workforce
-          </h2>
-          <p className="text-primary-foreground/80 leading-relaxed text-lg">
-            Deploy AI Sales Reps that close deals, process payments, and convert visitors into customers — automatically.
-          </p>
-          <div className="mt-12 grid grid-cols-3 gap-6 text-left">
-            <div>
-              <div className="text-2xl font-bold text-primary-foreground mb-1">10K+</div>
-              <p className="text-primary-foreground/70 text-sm">Businesses</p>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-primary-foreground mb-1">99.9%</div>
-              <p className="text-primary-foreground/70 text-sm">Uptime</p>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-primary-foreground mb-1">24/7</div>
-              <p className="text-primary-foreground/70 text-sm">Always Selling</p>
-            </div>
-          </div>
+    <div className="flex min-h-screen flex-col bg-background">
+      <header className="border-b border-border">
+        <div className="container mx-auto flex items-center px-4 py-4">
+          <Link to="/" className="flex items-center gap-2">
+            <BookOpen className="h-6 w-6 text-primary" />
+            <span
+              className="text-lg font-bold text-foreground"
+              style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}
+            >
+              MEEKAH
+            </span>
+          </Link>
         </div>
-      </div>
+      </header>
 
-      {/* Right form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
-          <div className="lg:hidden flex items-center gap-2 mb-10">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Users className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg">AI Sales Rep</span>
-          </div>
+      <main className="flex flex-1 items-center justify-center px-4 py-12">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle
+              className="text-2xl"
+              style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}
+            >
+              {mode === "login" ? "Welcome Back" : "First Time Access"}
+            </CardTitle>
+            <CardDescription>
+              {mode === "login"
+                ? "Sign in with your personal credentials"
+                : "Enter your email and the access password provided by your instructor"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <div className="mb-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                {error}
+              </div>
+            )}
 
-          <div className="mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2">Welcome back</h1>
-            <p className="text-muted-foreground">
-              Don't have an account?{" "}
-              <Link to="/signup" className="text-primary hover:underline font-medium">Create one</Link>
-            </p>
-          </div>
+            {mode === "login" ? (
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Your personal password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Signing in…" : "Sign In"}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleFirstTimeAccess} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ft-email">Email</Label>
+                  <Input
+                    id="ft-email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="general-password">Access Password</Label>
+                  <Input
+                    id="general-password"
+                    type="password"
+                    placeholder="Provided by your instructor"
+                    value={generalPassword}
+                    onChange={(e) => setGeneralPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Verifying…" : "Continue"}
+                </Button>
+              </form>
+            )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-semibold">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" className="h-10" />
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                onClick={() => {
+                  setMode(mode === "login" ? "first-time" : "login");
+                  setError("");
+                }}
+              >
+                {mode === "login"
+                  ? "First time? Set up your account"
+                  : "Already have an account? Sign in"}
+              </button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-semibold">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" className="h-10" />
-            </div>
-            <Button type="submit" className="w-full h-10 mt-6" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-        </div>
-      </div>
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 };

@@ -4,409 +4,477 @@ export type Json =
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[]
+  | Json[];
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
-  }
+    PostgrestVersion: "14.5";
+  };
   public: {
     Tables: {
-      chat_messages: {
+      allowed_users: {
         Row: {
-          content: string
-          conversation_id: string
-          created_at: string
-          id: string
-          role: string
-        }
+          created_at: string;
+          email: string;
+          id: string;
+          is_used: boolean;
+          linked_user_id: string | null;
+        };
         Insert: {
-          content: string
-          conversation_id: string
-          created_at?: string
-          id?: string
-          role: string
-        }
+          created_at?: string;
+          email: string;
+          id?: string;
+          is_used?: boolean;
+          linked_user_id?: string | null;
+        };
         Update: {
-          content?: string
-          conversation_id?: string
-          created_at?: string
-          id?: string
-          role?: string
-        }
+          created_at?: string;
+          email?: string;
+          id?: string;
+          is_used?: boolean;
+          linked_user_id?: string | null;
+        };
+        Relationships: [];
+      };
+      cbt_answers: {
+        Row: {
+          created_at: string;
+          id: string;
+          question_id: string;
+          question_index: number;
+          selected_option: string | null;
+          session_id: string;
+          subject_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          question_id: string;
+          question_index: number;
+          selected_option?: string | null;
+          session_id: string;
+          subject_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          question_id?: string;
+          question_index?: number;
+          selected_option?: string | null;
+          session_id?: string;
+          subject_id?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "chat_messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
+            foreignKeyName: "cbt_answers_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
           },
-        ]
-      }
-      conversations: {
+          {
+            foreignKeyName: "cbt_answers_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "cbt_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "cbt_answers_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "subjects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      cbt_results: {
         Row: {
-          created_at: string
-          id: string
-          last_active_at: string | null
-          site_id: string
-          updated_at: string
-          visitor_id: string
-        }
+          correct_answers: number;
+          created_at: string;
+          id: string;
+          session_id: string;
+          subject_scores: Json;
+          total_questions: number;
+          total_score: number;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          last_active_at?: string | null
-          site_id: string
-          updated_at?: string
-          visitor_id?: string
-        }
+          correct_answers?: number;
+          created_at?: string;
+          id?: string;
+          session_id: string;
+          subject_scores?: Json;
+          total_questions?: number;
+          total_score?: number;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          last_active_at?: string | null
-          site_id?: string
-          updated_at?: string
-          visitor_id?: string
-        }
+          correct_answers?: number;
+          created_at?: string;
+          id?: string;
+          session_id?: string;
+          subject_scores?: Json;
+          total_questions?: number;
+          total_score?: number;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "conversations_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
+            foreignKeyName: "cbt_results_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: true;
+            referencedRelation: "cbt_sessions";
+            referencedColumns: ["id"];
           },
-        ]
-      }
-      knowledge_chunks: {
+        ];
+      };
+      cbt_sessions: {
         Row: {
-          category: string | null
-          content: string
-          created_at: string
-          id: string
-          search_vector: unknown
-          site_id: string
-          source_url: string | null
-          title: string | null
-        }
+          created_at: string;
+          duration_minutes: number;
+          end_time: string | null;
+          id: string;
+          start_time: string;
+          status: string;
+          subject_ids: Json;
+          total_questions: number;
+          user_id: string;
+        };
         Insert: {
-          category?: string | null
-          content: string
-          created_at?: string
-          id?: string
-          search_vector?: unknown
-          site_id: string
-          source_url?: string | null
-          title?: string | null
-        }
+          created_at?: string;
+          duration_minutes?: number;
+          end_time?: string | null;
+          id?: string;
+          start_time?: string;
+          status?: string;
+          subject_ids: Json;
+          total_questions?: number;
+          user_id: string;
+        };
         Update: {
-          category?: string | null
-          content?: string
-          created_at?: string
-          id?: string
-          search_vector?: unknown
-          site_id?: string
-          source_url?: string | null
-          title?: string | null
-        }
+          created_at?: string;
+          duration_minutes?: number;
+          end_time?: string | null;
+          id?: string;
+          start_time?: string;
+          status?: string;
+          subject_ids?: Json;
+          total_questions?: number;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      practice_answers: {
+        Row: {
+          correct_option: string;
+          created_at: string;
+          id: string;
+          is_correct: boolean;
+          question_id: string;
+          selected_option: string;
+          session_id: string;
+        };
+        Insert: {
+          correct_option: string;
+          created_at?: string;
+          id?: string;
+          is_correct: boolean;
+          question_id: string;
+          selected_option: string;
+          session_id: string;
+        };
+        Update: {
+          correct_option?: string;
+          created_at?: string;
+          id?: string;
+          is_correct?: boolean;
+          question_id?: string;
+          selected_option?: string;
+          session_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "knowledge_chunks_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
+            foreignKeyName: "practice_answers_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
           },
-        ]
-      }
-      orders: {
+          {
+            foreignKeyName: "practice_answers_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "practice_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      practice_sessions: {
         Row: {
-          conversation_id: string | null
-          created_at: string
-          customer_address: string | null
-          customer_email: string | null
-          customer_name: string
-          customer_phone: string | null
-          id: string
-          payment_reference: string | null
-          payment_status: string
-          product_id: string | null
-          quantity: number
-          site_id: string
-          total_amount: number
-        }
+          correct_answers: number;
+          created_at: string;
+          id: string;
+          subject_id: string;
+          topic_id: string;
+          total_questions: number;
+          user_id: string;
+        };
         Insert: {
-          conversation_id?: string | null
-          created_at?: string
-          customer_address?: string | null
-          customer_email?: string | null
-          customer_name: string
-          customer_phone?: string | null
-          id?: string
-          payment_reference?: string | null
-          payment_status?: string
-          product_id?: string | null
-          quantity?: number
-          site_id: string
-          total_amount: number
-        }
+          correct_answers?: number;
+          created_at?: string;
+          id?: string;
+          subject_id: string;
+          topic_id: string;
+          total_questions?: number;
+          user_id: string;
+        };
         Update: {
-          conversation_id?: string | null
-          created_at?: string
-          customer_address?: string | null
-          customer_email?: string | null
-          customer_name?: string
-          customer_phone?: string | null
-          id?: string
-          payment_reference?: string | null
-          payment_status?: string
-          product_id?: string | null
-          quantity?: number
-          site_id?: string
-          total_amount?: number
-        }
+          correct_answers?: number;
+          created_at?: string;
+          id?: string;
+          subject_id?: string;
+          topic_id?: string;
+          total_questions?: number;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "orders_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
+            foreignKeyName: "practice_sessions_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "subjects";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "orders_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            foreignKeyName: "practice_sessions_topic_id_fkey";
+            columns: ["topic_id"];
+            isOneToOne: false;
+            referencedRelation: "topics";
+            referencedColumns: ["id"];
           },
-          {
-            foreignKeyName: "orders_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      payment_configs: {
+        ];
+      };
+      questions: {
         Row: {
-          created_at: string
-          id: string
-          is_active: boolean
-          provider: string
-          public_key: string
-          secret_key: string
-          site_id: string
-          updated_at: string
-        }
+          correct_option: string;
+          created_at: string;
+          difficulty: string;
+          explanation: string | null;
+          id: string;
+          option_a: string;
+          option_b: string;
+          option_c: string;
+          option_d: string;
+          question_text: string;
+          source_url: string | null;
+          subject_id: string;
+          topic_id: string;
+          type: string;
+          updated_at: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          provider: string
-          public_key: string
-          secret_key: string
-          site_id: string
-          updated_at?: string
-        }
+          correct_option: string;
+          created_at?: string;
+          difficulty?: string;
+          explanation?: string | null;
+          id?: string;
+          option_a: string;
+          option_b: string;
+          option_c: string;
+          option_d: string;
+          question_text: string;
+          source_url?: string | null;
+          subject_id: string;
+          topic_id: string;
+          type?: string;
+          updated_at?: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          provider?: string
-          public_key?: string
-          secret_key?: string
-          site_id?: string
-          updated_at?: string
-        }
+          correct_option?: string;
+          created_at?: string;
+          difficulty?: string;
+          explanation?: string | null;
+          id?: string;
+          option_a?: string;
+          option_b?: string;
+          option_c?: string;
+          option_d?: string;
+          question_text?: string;
+          source_url?: string | null;
+          subject_id?: string;
+          topic_id?: string;
+          type?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "payment_configs_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
+            foreignKeyName: "questions_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "subjects";
+            referencedColumns: ["id"];
           },
-        ]
-      }
-      products: {
+          {
+            foreignKeyName: "questions_topic_id_fkey";
+            columns: ["topic_id"];
+            isOneToOne: false;
+            referencedRelation: "topics";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      settings: {
         Row: {
-          category: string | null
-          created_at: string
-          description: string | null
-          id: string
-          image_url: string | null
-          name: string
-          price: number | null
-          site_id: string
-          stock: number | null
-          updated_at: string
-        }
+          general_password: string;
+          id: string;
+          updated_at: string;
+        };
         Insert: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          image_url?: string | null
-          name: string
-          price?: number | null
-          site_id: string
-          stock?: number | null
-          updated_at?: string
-        }
+          general_password: string;
+          id?: string;
+          updated_at?: string;
+        };
         Update: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          image_url?: string | null
-          name?: string
-          price?: number | null
-          site_id?: string
-          stock?: number | null
-          updated_at?: string
-        }
+          general_password?: string;
+          id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      subjects: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      topics: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          subject_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          subject_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          subject_id?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "products_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
+            foreignKeyName: "topics_subject_id_fkey";
+            columns: ["subject_id"];
+            isOneToOne: false;
+            referencedRelation: "subjects";
+            referencedColumns: ["id"];
           },
-        ]
-      }
-      profiles: {
+        ];
+      };
+      users: {
         Row: {
-          avatar_url: string | null
-          created_at: string
-          display_name: string | null
-          email: string | null
-          id: string
-          updated_at: string
-          user_id: string
-        }
+          created_at: string;
+          email: string;
+          full_name: string;
+          has_set_password: boolean;
+          id: string;
+          role: string;
+        };
         Insert: {
-          avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          email?: string | null
-          id?: string
-          updated_at?: string
-          user_id: string
-        }
+          created_at?: string;
+          email: string;
+          full_name: string;
+          has_set_password?: boolean;
+          id?: string;
+          role?: string;
+        };
         Update: {
-          avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          email?: string | null
-          id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      sites: {
-        Row: {
-          ai_model: string
-          ai_provider: string
-          created_at: string
-          currency: string
-          id: string
-          industry: string
-          last_crawled_at: string | null
-          name: string
-          pages_crawled: number
-          status: string
-          updated_at: string
-          url: string
-          user_id: string
-          welcome_message: string | null
-        }
-        Insert: {
-          ai_model?: string
-          ai_provider?: string
-          created_at?: string
-          currency?: string
-          id?: string
-          industry?: string
-          last_crawled_at?: string | null
-          name: string
-          pages_crawled?: number
-          status?: string
-          updated_at?: string
-          url: string
-          user_id: string
-          welcome_message?: string | null
-        }
-        Update: {
-          ai_model?: string
-          ai_provider?: string
-          created_at?: string
-          currency?: string
-          id?: string
-          industry?: string
-          last_crawled_at?: string | null
-          name?: string
-          pages_crawled?: number
-          status?: string
-          updated_at?: string
-          url?: string
-          user_id?: string
-          welcome_message?: string | null
-        }
-        Relationships: []
-      }
-    }
+          created_at?: string;
+          email?: string;
+          full_name?: string;
+          has_set_password?: boolean;
+          id?: string;
+          role?: string;
+        };
+        Relationships: [];
+      };
+    };
     Views: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Functions: {
-      search_knowledge: {
-        Args: { p_limit?: number; p_query: string; p_site_id: string }
-        Returns: {
-          category: string
-          content: string
-          id: string
-          rank: number
-          source_url: string
-          title: string
-        }[]
-      }
-    }
+      check_email_whitelist: { Args: { check_email: string }; Returns: Json };
+      complete_account_setup: {
+        Args: { user_email: string; user_id: string };
+        Returns: boolean;
+      };
+      is_admin: { Args: { _user_id: string }; Returns: boolean };
+      verify_general_password: {
+        Args: { input_password: string };
+        Returns: boolean;
+      };
+    };
     Enums: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
+      [_ in never]: never;
+    };
+  };
+};
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<
+  keyof Database,
+  "public"
+>];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+      Row: infer R;
     }
     ? R
     : never
@@ -414,98 +482,98 @@ export type Tables<
         DefaultSchema["Views"])
     ? (DefaultSchema["Tables"] &
         DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
+        Row: infer R;
       }
       ? R
       : never
-    : never
+    : never;
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+      Insert: infer I;
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
+        Insert: infer I;
       }
       ? I
       : never
-    : never
+    : never;
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+      Update: infer U;
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
+        Update: infer U;
       }
       ? U
       : never
-    : never
+    : never;
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+    : never;
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+    : never;
 
 export const Constants = {
   public: {
     Enums: {},
   },
-} as const
+} as const;
